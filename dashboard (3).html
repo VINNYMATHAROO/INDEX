@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lead Desk — Live Call Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #eef1f0;
+    --panel: #ffffff;
+    --ink: #1f2933;
+    --ink-soft: #5b6672;
+    --line: #dfe4e2;
+    --teal: #2f6f63;
+    --teal-dark: #234f46;
+    --amber: #d98c2b;
+    --red: #c05b4d;
+    --gray-chip: #eef0ee;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(20,30,28,0.06), 0 8px 24px -12px rgba(20,30,28,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,.brand{font-family:'Sora', sans-serif;}
+  .topbar{
+    position:sticky; top:0; z-index:10;
+    background:var(--teal-dark);
+    color:#f2f4f2;
+    padding:14px 18px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px;
+    box-shadow:var(--shadow);
+  }
+  .brand{font-size:18px; font-weight:700; letter-spacing:0.2px; display:flex; align-items:center; gap:8px;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:#7fd9c4;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  .sync-info{font-size:12px; color:#cfe3dd; font-family:'IBM Plex Mono', monospace; text-align:right;}
+  .stats-row{
+    display:flex; gap:10px; padding:14px 18px 4px; flex-wrap:wrap;
+  }
+  .stat{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:10px 16px; min-width:110px; box-shadow:var(--shadow);
+  }
+  .stat .num{font-family:'Sora'; font-size:22px; font-weight:700;}
+  .stat .lbl{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.6px;}
+  .toolbar{
+    display:flex; gap:10px; padding:10px 18px; align-items:center; flex-wrap:wrap;
+  }
+  .toolbar input[type=text]{
+    flex:1; min-width:160px; padding:9px 12px; border-radius:10px; border:1px solid var(--line);
+    font-family:'Inter'; font-size:14px; background:var(--panel);
+  }
+  .btn{
+    border:none; border-radius:10px; padding:9px 14px; font-family:'Inter'; font-weight:600;
+    font-size:13px; cursor:pointer; transition:transform .05s ease;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-ghost{background:var(--panel); border:1px solid var(--line); color:var(--ink);}
+  .btn-teal{background:var(--teal); color:#fff;}
+  .grid{
+    display:grid; gap:14px; padding:8px 18px 40px;
+    grid-template-columns: 1fr;
+  }
+  @media(min-width:680px){ .grid{grid-template-columns: 1fr 1fr;} }
+  @media(min-width:1080px){ .grid{grid-template-columns: 1fr 1fr 1fr;} }
+
+  .card{
+    background:var(--panel); border-radius:var(--radius); box-shadow:var(--shadow);
+    border-left:5px solid var(--gray-chip);
+    padding:14px 16px 12px; display:flex; flex-direction:column; gap:8px;
+  }
+  .card.q-yes{border-left-color:var(--teal);}
+  .card.q-no{border-left-color:var(--red);}
+  .card-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .lead-name{font-family:'Sora'; font-weight:700; font-size:15.5px; line-height:1.25;}
+  .row-tag{font-family:'IBM Plex Mono'; font-size:10.5px; color:var(--ink-soft); background:var(--gray-chip); padding:2px 7px; border-radius:6px; white-space:nowrap;}
+  .field-list{display:flex; flex-direction:column; gap:3px; font-size:13px; color:var(--ink-soft);}
+  .field-list b{color:var(--ink); font-weight:600;}
+  .call-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--teal); color:#fff; text-decoration:none;
+    padding:10px; border-radius:10px; font-weight:600; font-size:14px; margin-top:4px;
+  }
+  .call-btn:active{transform:scale(0.98);}
+  .divider{height:1px; background:var(--line); margin:6px 0;}
+  .crm-row{display:flex; gap:8px; flex-wrap:wrap;}
+  select, textarea{
+    font-family:'Inter'; font-size:13.5px; border:1px solid var(--line); border-radius:9px;
+    padding:8px 10px; background:#fbfcfb; color:var(--ink);
+  }
+  select{flex:1; min-width:90px;}
+  textarea{width:100%; min-height:46px; resize:vertical;}
+  .save-row{display:flex; justify-content:flex-end; gap:8px; align-items:center;}
+  .saved-chip{font-size:11.5px; color:var(--teal-dark); font-weight:600; opacity:0; transition:opacity .3s;}
+  .saved-chip.show{opacity:1;}
+  .empty, .configmsg{padding:40px 20px; text-align:center; color:var(--ink-soft);}
+  .configmsg code{background:var(--gray-chip); padding:2px 6px; border-radius:6px;}
+  .toast{
+    position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff; padding:10px 18px; border-radius:10px; font-size:13px;
+    opacity:0; pointer-events:none; transition:opacity .25s; z-index:50;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span>Lead Desk</div>
+  <div class="sync-info" id="syncInfo">connecting…</div>
+</div>
+
+<div class="stats-row" id="statsRow" style="display:none;">
+  <div class="stat"><div class="num" id="statTotal">0</div><div class="lbl">Total leads</div></div>
+  <div class="stat"><div class="num" id="statQualified">0</div><div class="lbl">Qualified</div></div>
+  <div class="stat"><div class="num" id="statPending">0</div><div class="lbl">Not marked</div></div>
+</div>
+
+<div class="toolbar" id="toolbar" style="display:none;">
+  <input type="text" id="searchBox" placeholder="Search by name, phone, or any field…" />
+  <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-soft); white-space:nowrap;">
+    <input type="checkbox" id="showHandled" /> Show handled leads
+  </label>
+  <button class="btn btn-ghost" id="refreshBtn">Refresh now</button>
+</div>
+
+<div id="app">
+  <div class="configmsg">
+    Loading configuration… if this doesn't change, open <code>dashboard.html</code> in a text editor
+    and paste your Apps Script Web App URL into <code>CONFIG.webAppUrl</code> near the top of the script.
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================= CONFIG — EDIT THIS ======================= */
+const CONFIG = {
+  webAppUrl: "https://script.google.com/macros/s/AKfycbwOfEpMNrRRtBgClVDeckWrAnHdXs7dgPKEww9P3-BtkUv_uPGXGJUFHhhOG43NDgM/exec",
+  refreshMs: 15000, // how often to pull fresh data from the sheet (ms)
+  phoneColumn: "" // leave blank to auto-detect column G by position
+};
+/* ==================================================================== */
+
+const appEl = document.getElementById('app');
+const syncInfo = document.getElementById('syncInfo');
+const toastEl = document.getElementById('toast');
+let lastRowsSignature = "";
+let headers = [];
+let currentRows = [];
+
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'), 2200);
+}
+
+function fmtTime(d){
+  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+
+async function fetchData(){
+  if(!CONFIG.webAppUrl || CONFIG.webAppUrl.indexOf('PASTE_YOUR') === 0){
+    return;
+  }
+  try{
+    syncInfo.textContent = 'syncing…';
+    const res = await fetch(CONFIG.webAppUrl + '?t=' + Date.now());
+    const data = await res.json();
+    if(!data.success){ throw new Error(data.error || 'Unknown error'); }
+    headers = data.headers;
+    currentRows = data.rows;
+    const sig = JSON.stringify(currentRows);
+    if(sig !== lastRowsSignature){
+      lastRowsSignature = sig;
+      render(currentRows);
+    }
+    syncInfo.textContent = 'live — last synced ' + fmtTime(new Date());
+  }catch(err){
+    syncInfo.textContent = 'sync error — retrying…';
+    console.error(err);
+  }
+}
+
+function getPhoneKey(){
+  if(CONFIG.phoneColumn) return CONFIG.phoneColumn;
+  // column G is the 7th header (A=1..G=7)
+  return headers[6];
+}
+
+function displayName(row){
+  // Use column A (or B) as a human label; fall back to row id
+  const nameKey = headers[0];
+  return (row[nameKey] || ('Lead #' + row._row));
+}
+
+function cardHtml(row){
+  const phoneKey = getPhoneKey();
+  const phone = (row[phoneKey] || '').toString().trim();
+  const qualKey = headers[11] || 'Lead Qualified';
+  const nextKey = headers[12] || 'Next Action Step';
+  const qual = (row[qualKey] || '').toString();
+  const qClass = qual.toLowerCase() === 'yes' ? 'q-yes' : (qual.toLowerCase() === 'no' ? 'q-no' : '');
+
+  const fieldsHtml = headers.slice(1, 11).map(function(h){
+    if(!h) return '';
+    const v = row[h];
+    if(v === '' || v === undefined || v === null) return '';
+    return '<div><b>' + escapeHtml(h) + ':</b> ' + escapeHtml(String(v)) + '</div>';
+  }).join('');
+
+  return (
+    '<div class="card ' + qClass + '" data-row="' + row._row + '">' +
+      '<div class="card-head">' +
+        '<div class="lead-name">' + escapeHtml(displayName(row)) + '</div>' +
+        '<div class="row-tag">#' + row._row + '</div>' +
+      '</div>' +
+      '<div class="field-list">' + fieldsHtml + '</div>' +
+      (phone
+        ? '<a class="call-btn" href="tel:' + encodeURIComponent(phone) + '">📞 Call ' + escapeHtml(phone) + '</a>'
+        : '<div class="call-btn" style="background:var(--gray-chip); color:var(--ink-soft);">No phone number</div>') +
+      '<div class="divider"></div>' +
+      '<div class="crm-row">' +
+        '<select class="qualSelect">' +
+          '<option value="" ' + (qual===''?'selected':'') + '>Lead Qualified…</option>' +
+          '<option value="Yes" ' + (qual==='Yes'?'selected':'') + '>Yes</option>' +
+          '<option value="No" ' + (qual==='No'?'selected':'') + '>No</option>' +
+        '</select>' +
+      '</div>' +
+      '<textarea class="nextAction" placeholder="Next action step…">' + escapeHtml(row[nextKey] || '') + '</textarea>' +
+      '<div class="save-row">' +
+        '<span class="saved-chip">Saved ✓</span>' +
+        '<button class="btn btn-teal saveBtn">Save</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function escapeHtml(s){
+  if(s === null || s === undefined) s = '';
+  s = String(s); // numbers, dates etc. all get safely converted to text first
+  return s.replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+function render(rows){
+  document.getElementById('statsRow').style.display = 'flex';
+  document.getElementById('toolbar').style.display = 'flex';
+
+  const qualKey = headers[11] || 'Lead Qualified';
+  const total = rows.length;
+  const qualified = rows.filter(r => (r[qualKey]||'').toString().toLowerCase() === 'yes').length;
+  const pending = rows.filter(r => !r[qualKey]).length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statQualified').textContent = qualified;
+  document.getElementById('statPending').textContent = pending;
+
+  if(rows.length === 0){
+    appEl.innerHTML = '<div class="empty">No leads yet. New rows added to the sheet will show up here automatically.</div>';
+    return;
+  }
+
+  const query = (document.getElementById('searchBox').value || '').toLowerCase();
+  const showHandled = document.getElementById('showHandled').checked;
+
+  let filtered = rows;
+  if(!showHandled){
+    filtered = filtered.filter(r => !(r[qualKey] || '').toString().trim());
+  }
+  if(query){
+    filtered = filtered.filter(r => JSON.stringify(r).toLowerCase().includes(query));
+  }
+
+  if(filtered.length === 0){
+    appEl.innerHTML = '<div class="empty">' +
+      (showHandled ? 'No leads match your search.' : 'All caught up — every lead has been marked. Tick "Show handled leads" to review them.') +
+      '</div>';
+    return;
+  }
+
+  appEl.innerHTML = '<div class="grid">' + filtered.map(cardHtml).join('') + '</div>';
+
+  // wire up save buttons
+  appEl.querySelectorAll('.card').forEach(function(card){
+    const rowNum = card.getAttribute('data-row');
+    card.querySelector('.saveBtn').addEventListener('click', function(){
+      saveRow(card, rowNum);
+    });
+  });
+}
+
+async function saveRow(card, rowNum){
+  const qual = card.querySelector('.qualSelect').value;
+  const next = card.querySelector('.nextAction').value;
+  const btn = card.querySelector('.saveBtn');
+  const chip = card.querySelector('.saved-chip');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try{
+    const res = await fetch(CONFIG.webAppUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'}, // avoids CORS preflight
+      body: JSON.stringify({ row: Number(rowNum), leadQualified: qual, nextAction: next })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || 'Save failed');
+    chip.classList.add('show');
+    showToast('CRM updated for row #' + rowNum);
+
+    // update our in-memory copy so the next render (or a manual refresh) stays consistent
+    const qualKey = headers[11] || 'Lead Qualified';
+    const nextKey = headers[12] || 'Next Action Step';
+    const target = currentRows.find(r => String(r._row) === String(rowNum));
+    if(target){ target[qualKey] = qual; target[nextKey] = next; }
+    lastRowsSignature = JSON.stringify(currentRows);
+
+    const showHandled = document.getElementById('showHandled').checked;
+    if(qual && !showHandled){
+      // this lead is now marked and we're hiding handled leads — remove the card
+      card.style.transition = 'opacity .25s, transform .25s';
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.97)';
+      setTimeout(() => render(currentRows), 250);
+    } else {
+      card.classList.remove('q-yes','q-no');
+      if(qual === 'Yes') card.classList.add('q-yes');
+      if(qual === 'No') card.classList.add('q-no');
+    }
+  }catch(err){
+    showToast('Save failed — check connection');
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+}
+
+document.getElementById('refreshBtn').addEventListener('click', fetchData);
+document.getElementById('searchBox').addEventListener('input', function(){ render(currentRows); });
+document.getElementById('showHandled').addEventListener('change', function(){ render(currentRows); });
+
+if(CONFIG.webAppUrl && CONFIG.webAppUrl.indexOf('PASTE_YOUR') !== 0){
+  fetchData();
+  setInterval(fetchData, CONFIG.refreshMs);
+} else {
+  syncInfo.textContent = 'not configured';
+}
+</script>
+</body>
+</html>
