@@ -396,7 +396,6 @@ function computeStatus(row, days){
   const qual = (row[getQualKey()] || '').toString().toLowerCase();
   if(qual === 'yes') return {label:'Confirmed', cls:'confirmed'};
   if(qual === 'no') return {label:'Cancelled', cls:'cancelled'};
-  if(days !== null && days >= OVERDUE_DAYS) return {label:'Delayed', cls:'delayed'};
   return {label:'Waiting', cls:'waiting'};
 }
 
