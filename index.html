@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lead Desk — Departures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f6f1;
+    --panel:#ffffff;
+    --panel-alt:#f2f0ea;
+    --line:#e6e3d9;
+    --ink:#201f1c;
+    --ink-soft:#7a756b;
+    --gold:#9c7a2e;
+    --gold-tint:#f2ecd9;
+    --wine:#8a2f3a;
+    --wine-tint:#f3e2e2;
+    --forest:#2e5c46;
+    --forest-tint:#e2ebe3;
+    --slate:#565b66;
+    --slate-tint:#e9e9ee;
+    --radius:8px;
+    --shadow:0 4px 16px -10px rgba(30,28,22,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .disp{font-family:'Fraunces', serif;}
+  .mono{font-family:'JetBrains Mono', monospace;}
+
+  /* ---------------- header ---------------- */
+  .boardbar{
+    position:sticky; top:0; z-index:20;
+    background:var(--ink); border-bottom:none;
+    padding:16px 26px; display:flex; align-items:center; gap:18px;
+  }
+  .accent-strip{
+    height:3px; background:linear-gradient(90deg, var(--gold) 0%, var(--gold) 33%, var(--wine) 33%, var(--wine) 66%, var(--forest) 66%, var(--forest) 100%);
+  }
+  .brand-wrap{ display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
+  .logo-box{
+    height:42px; width:auto; min-width:42px; max-width:150px; border-radius:9px; flex-shrink:0;
+    background:#ffffff; border:1px solid rgba(255,255,255,0.14);
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    padding:5px 10px;
+  }
+  .logo-box img{ height:100%; width:auto; max-width:100%; object-fit:contain; }
+  .logo-box #logoFallback{ color:var(--ink); font-size:13px; font-weight:600; letter-spacing:0.4px; }
+  .brand{
+    font-weight:600; font-size:21px; letter-spacing:0.3px; display:flex; align-items:center; gap:10px;
+    color:#fdfcf8; font-style:italic;
+  }
+  .brand .dot{width:6px; height:6px; border-radius:50%; background:#6fd6a8; animation:pulse 2.2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .clock{font-size:12.5px; letter-spacing:0.5px; color:#cfc9b8;}
+  .syncline{font-size:10.5px; color:#a49d8a; letter-spacing:0.3px; text-align:right; min-width:150px;}
+
+  /* ---------------- summary strip ---------------- */
+  .summary{
+    display:flex; flex-wrap:wrap; gap:8px 26px; align-items:baseline;
+    padding:16px 26px; background:var(--panel-alt); border-bottom:1px solid var(--line);
+    font-size:12.5px; letter-spacing:0.2px; color:var(--ink-soft);
+  }
+  .summary b{font-size:19px; color:var(--ink); font-weight:600; font-family:'Inter';}
+  .summary .amber b{color:var(--gold);}
+  .summary .red b{color:var(--wine);}
+  .summary .green b{color:var(--forest);}
+
+  /* ---------------- controls ---------------- */
+  .controls{
+    display:flex; gap:8px; padding:14px 26px; flex-wrap:wrap; align-items:center;
+    border-bottom:1px solid var(--line); background:var(--panel);
+  }
+  .controls input[type=text]{
+    flex:1; min-width:200px; padding:9px 13px; border-radius:var(--radius); border:1px solid var(--line);
+    background:var(--panel); color:var(--ink); font-size:13px; letter-spacing:0.2px;
+  }
+  .controls input::placeholder{color:var(--ink-soft);}
+  .controls select{
+    padding:9px 12px; border-radius:var(--radius); border:1px solid var(--line);
+    background:var(--panel); color:var(--ink); font-size:12.5px;
+  }
+  .controls input:focus, .controls select:focus, select:focus, textarea:focus{
+    outline:2px solid var(--ink); outline-offset:1px;
+  }
+  .toggle{
+    display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft);
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:8px 13px;
+    letter-spacing:0.2px; white-space:nowrap;
+  }
+  .btn{
+    border:none; border-radius:var(--radius); padding:9px 17px; font-weight:600; font-size:12px;
+    cursor:pointer; letter-spacing:0.2px; background:var(--ink); color:#fdfcf8;
+  }
+  .btn:active{transform:scale(0.97);}
+
+  /* ---------------- list header ---------------- */
+  .listhead{
+    display:grid; grid-template-columns:104px 1.5fr 1fr 1.2fr 66px 22px;
+    padding:10px 26px; font-size:10px; letter-spacing:0.8px; color:var(--ink-soft);
+    text-transform:uppercase; font-weight:600;
+    border-bottom:1px solid var(--line); background:var(--panel-alt);
+  }
+  @media(max-width:760px){ .listhead{grid-template-columns:104px 1.6fr 66px 22px;} .lh-route,.lh-item{display:none;} }
+
+  /* ---------------- rows ---------------- */
+  .list{ padding:0 0 40px; }
+  .row{ border-bottom:1px solid var(--line); }
+  .row summary{ list-style:none; cursor:pointer; }
+  .row summary::-webkit-details-marker{ display:none; }
+  .row:nth-child(odd){ background:var(--panel); }
+  .row:nth-child(even){ background:var(--panel); }
+  .row:hover{ background:var(--panel-alt); }
+  .row{ border-left:3px solid transparent; }
+  .row.status-waiting{ border-left-color:var(--gold); }
+  .row.status-delayed{ border-left-color:var(--wine); }
+  .row.status-confirmed{ border-left-color:var(--forest); }
+  .row.status-cancelled{ border-left-color:var(--slate); }
+
+  .row-summary{
+    display:grid; grid-template-columns:104px 1.5fr 1fr 1.2fr 66px 22px;
+    align-items:center; gap:6px; padding:15px 26px;
+  }
+  @media(max-width:760px){ .row-summary{grid-template-columns:104px 1.6fr 66px 22px;} .col-route,.col-item{display:none;} }
+
+  .chip{
+    font-family:'Inter'; font-size:10.5px; font-weight:600; letter-spacing:0.2px;
+    padding:3px 10px; border-radius:20px; white-space:nowrap; display:inline-block;
+    border:1px solid transparent;
+  }
+  .chip-waiting{background:var(--gold-tint); color:var(--gold); border-color:rgba(156,122,46,0.25);}
+  .chip-delayed{background:var(--wine-tint); color:var(--wine); border-color:rgba(138,47,58,0.28);}
+  .chip-confirmed{background:var(--forest-tint); color:var(--forest); border-color:rgba(46,92,70,0.25);}
+  .chip-cancelled{background:var(--slate-tint); color:var(--slate); border-color:rgba(86,91,102,0.22);}
+
+  .col-lead{display:flex; flex-direction:column; gap:1px; min-width:0;}
+  .lead-name{font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .col-route, .col-item{font-size:12.5px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .col-age{font-family:'JetBrains Mono'; font-size:12px; color:var(--ink-soft);}
+  .col-chev{font-size:10px; color:var(--ink-soft); transition:transform .15s; text-align:right;}
+  .row[open] .col-chev{transform:rotate(180deg);}
+
+  .row-expand{ padding:4px 22px 20px; display:flex; flex-direction:column; gap:12px; }
+  .field-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; margin:0; }
+  @media(max-width:520px){ .field-grid{grid-template-columns:1fr;} }
+  .field-grid .field{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+  .field-grid dt{ font-size:9.5px; text-transform:uppercase; letter-spacing:0.6px; color:var(--ink-soft); font-weight:600; margin:0; }
+  .field-grid dd{ margin:0; font-size:13px; color:var(--ink); word-break:break-word; }
+
+  .call-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--ink); color:#fdfcf8; text-decoration:none;
+    padding:10px; border-radius:var(--radius); font-weight:600; font-size:13.5px; letter-spacing:0.2px;
+  }
+  .call-btn.disabled{ background:var(--panel-alt); color:var(--ink-soft); border:1px solid var(--line); }
+
+  .divider{ height:1px; background:var(--line); }
+
+  .crm-block{ display:flex; flex-direction:column; gap:8px; }
+  .crm-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.6px; color:var(--ink-soft); font-weight:600; }
+  select.qualSelect, textarea{
+    font-family:'Inter'; font-size:13px; border:1px solid var(--line); border-radius:var(--radius);
+    padding:8px 10px; background:var(--panel-alt); color:var(--ink); width:100%;
+  }
+  textarea{ min-height:44px; resize:vertical; }
+  .save-row{ display:flex; justify-content:flex-end; gap:10px; align-items:center; }
+  .saved-chip{ font-size:11px; color:var(--forest); font-weight:600; opacity:0; transition:opacity .3s; }
+  .saved-chip.show{ opacity:1; }
+
+  .empty, .configmsg{ padding:60px 22px; text-align:center; color:var(--ink-soft); font-size:13.5px; }
+  .configmsg code{ background:var(--panel-alt); padding:2px 6px; border-radius:5px; font-family:'JetBrains Mono'; }
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff;
+    padding:9px 18px; border-radius:var(--radius); font-size:12.5px;
+    opacity:0; pointer-events:none; transition:opacity .25s; z-index:50; box-shadow:var(--shadow);
+  }
+  .toast.show{ opacity:1; }
+
+  /* quiet entrance, first paint only */
+  @keyframes fadeUp{
+    from{ opacity:0; transform:translateY(4px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .row.flip-in{ animation:fadeUp .3s ease both; }
+
+  @media (prefers-reduced-motion: reduce){
+    .brand .dot{ animation:none; }
+    .row.flip-in{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="boardbar">
+  <div class="brand-wrap">
+    <div class="logo-box" id="logoBox">
+      <img id="logoImg" alt="Company logo" style="display:none;">
+      <span id="logoFallback" class="disp">LD</span>
+    </div>
+    <div class="brand disp"><span class="dot"></span>Lead Desk</div>
+  </div>
+  <div class="clock mono" id="clock">--:--:--</div>
+  <div class="syncline mono" id="syncInfo">connecting…</div>
+</div>
+<div class="accent-strip"></div>
+
+<div class="summary" id="summary" style="display:none;">
+  <span><b id="statTotal">0</b> total</span>
+  <span class="amber"><b id="statPending">0</b> waiting</span>
+  <span class="red"><b id="statOverdue">0</b> delayed</span>
+  <span class="green"><b id="statQualified">0</b> confirmed</span>
+</div>
+
+<div class="controls" id="controls" style="display:none;">
+  <input type="text" id="searchBox" placeholder="Search name, phone, city…" />
+  <select id="sortOrder">
+    <option value="urgent">Most urgent first</option>
+    <option value="newest">Newest enquiry first</option>
+    <option value="oldest">Oldest enquiry first</option>
+  </select>
+  <label class="toggle"><input type="checkbox" id="focusMode" /> Waiting only</label>
+  <button class="btn" id="refreshBtn">Refresh</button>
+</div>
+
+<div class="listhead" id="listhead" style="display:none;">
+  <span>Status</span><span>Lead</span><span class="lh-route">Route</span><span class="lh-item">Item</span><span>Age</span><span></span>
+</div>
+
+<div id="app">
+  <div class="empty">Loading the board…</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================= CONFIG — EDIT THIS ======================= */
+const CONFIG = {
+  // Path or URL to your company logo (png/svg/jpg). Easiest: put the image file in the
+  // same folder as this HTML file and just put its filename here, e.g. "logo.png".
+  logoUrl: "innate.png",
+  webAppUrl: "https://script.google.com/macros/s/AKfycbwUkt3raFYivC33_tVV3s3NSDCghfH0Nt50NcZR5SaKlc8VHoOEhAMyAPxpIuyjuVO7/exec",
+  refreshMs: 15000,
+  phoneColumn: ""
+};
+/* ==================================================================== */
+
+const appEl = document.getElementById('app');
+const syncInfo = document.getElementById('syncInfo');
+const toastEl = document.getElementById('toast');
+let lastRowsSignature = "";
+let headers = [];
+let currentRows = [];
+let failCount = 0;
+let everLoaded = false;
+let firstPaint = true;
+const CACHE_KEY = 'leadDeskCache_departures_v1';
+const OVERDUE_DAYS = 3;
+
+function loadCache(){
+  try{ const raw = localStorage.getItem(CACHE_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+function saveCache(){
+  try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ headers, rows: currentRows, ts: Date.now() })); }catch(e){}
+}
+
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'), 2200);
+}
+function fmtTime(d){ return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}); }
+
+function tickClock(){
+  document.getElementById('clock').textContent = fmtTime(new Date());
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+(function initLogo(){
+  const url = (CONFIG.logoUrl || '').trim();
+  if(!url) return;
+  const img = document.getElementById('logoImg');
+  const fallback = document.getElementById('logoFallback');
+  img.onload = function(){ img.style.display = 'block'; fallback.style.display = 'none'; };
+  img.onerror = function(){ img.style.display = 'none'; fallback.style.display = 'block'; };
+  img.src = url;
+})();
+
+async function fetchData(){
+  if(!CONFIG.webAppUrl || CONFIG.webAppUrl.indexOf('PASTE_YOUR') === 0){
+    appEl.innerHTML = '<div class="configmsg">Loading configuration… if this doesn\'t change, open <code>dashboard.html</code> in a text editor ' +
+      'and paste your Apps Script Web App URL into <code>CONFIG.webAppUrl</code> near the top of the script.</div>';
+    return;
+  }
+  try{
+    syncInfo.textContent = 'syncing…';
+    const res = await fetch(CONFIG.webAppUrl + '?t=' + Date.now());
+    const data = await res.json();
+    if(!data.success){ throw new Error(data.error || 'Unknown error'); }
+    headers = data.headers;
+    currentRows = data.rows;
+    failCount = 0;
+    everLoaded = true;
+    const sig = JSON.stringify(currentRows);
+    if(sig !== lastRowsSignature){
+      lastRowsSignature = sig;
+      render(currentRows);
+    }
+    saveCache();
+    syncInfo.textContent = 'live — synced ' + fmtTime(new Date());
+  }catch(err){
+    failCount++;
+    syncInfo.textContent = 'sync error — retrying…';
+    console.error(err);
+    if(!everLoaded && failCount >= 3){
+      appEl.innerHTML = '<div class="empty">Couldn\'t load leads right now. Check your internet connection — this page will keep retrying automatically.</div>';
+    }
+  }
+}
+
+function getPhoneKey(){
+  if(CONFIG.phoneColumn) return CONFIG.phoneColumn;
+  return headers[6];
+}
+function findHeader(patterns, fallbackIdx){
+  for(const p of patterns){
+    const idx = headers.findIndex(h => p.test(h||''));
+    if(idx !== -1) return headers[idx];
+  }
+  return (fallbackIdx !== undefined ? headers[fallbackIdx] : null) || null;
+}
+function getNameKey(){ return findHeader([/person\s*name/i, /party\s*name/i], 1); }
+function getDateKey(){ return findHeader([/enquiry\s*date/i], null); }
+function getQualKey(){ return headers[11] || 'Lead Qualified'; }
+function getNextKey(){ return headers[12] || 'Next Action Step'; }
+
+function displayName(row){
+  const key = getNameKey();
+  const v = (row[key] || '').toString().trim();
+  return (v && v.toUpperCase() !== 'NA') ? v : ('Lead #' + row._row);
+}
+
+function isBlankVal(v){
+  if(v === '' || v === undefined || v === null) return true;
+  return String(v).trim().toUpperCase() === 'NA';
+}
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?$/;
+function formatValue(v){
+  if(v === null || v === undefined) return '';
+  if(typeof v === 'string' && ISO_DATE_RE.test(v)){
+    const d = new Date(v);
+    if(!isNaN(d.getTime())) return d.toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'});
+  }
+  return String(v);
+}
+
+function daysSinceEnquiry(row){
+  const dateKey = getDateKey();
+  if(!dateKey) return null;
+  const raw = row[dateKey];
+  if(!raw) return null;
+  const d = new Date(raw);
+  if(isNaN(d.getTime())) return null;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
+function escapeHtml(s){
+  if(s === null || s === undefined) s = '';
+  s = String(s);
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fieldDiv(label, value){
+  if(isBlankVal(value)) return '';
+  return '<div class="field"><dt>' + escapeHtml(label) + '</dt><dd>' + escapeHtml(formatValue(value)) + '</dd></div>';
+}
+
+function computeStatus(row, days){
+  const qual = (row[getQualKey()] || '').toString().toLowerCase();
+  if(qual === 'yes') return {label:'Confirmed', cls:'confirmed'};
+  if(qual === 'no') return {label:'Cancelled', cls:'cancelled'};
+  if(days !== null && days >= OVERDUE_DAYS) return {label:'Delayed', cls:'delayed'};
+  return {label:'Waiting', cls:'waiting'};
+}
+
+function rowHtml(row, animate, idx){
+  const phoneKey = getPhoneKey();
+  const nameKey = getNameKey();
+  const phone = (row[phoneKey] || '').toString().trim();
+  const qualKey = getQualKey();
+  const nextKey = getNextKey();
+  const qual = (row[qualKey] || '').toString();
+
+  const dateKey = getDateKey();
+  const modeKey = findHeader([/enquiry\s*mode/i], 2);
+  const partyKey = findHeader([/party\s*name/i], 3);
+  const cityKey = findHeader([/city/i], 4);
+  const emailKey = findHeader([/email/i], 7);
+  const productKey = findHeader([/product/i], 8);
+  const qtyKey = findHeader([/quantity/i], 9);
+  const actionKey = findHeader([/further\s*action/i], 10);
+
+  const days = daysSinceEnquiry(row);
+  const status = computeStatus(row, days);
+  const ageLabel = days === null ? '—' : (days <= 0 ? 'today' : days + 'd');
+
+  let productVal = row[productKey];
+  if(!isBlankVal(productVal) && !isBlankVal(row[qtyKey])) productVal = productVal + ' · ' + row[qtyKey];
+  const productShort = isBlankVal(productVal) ? '—' : String(productVal);
+  const cityShort = isBlankVal(row[cityKey]) ? '—' : String(row[cityKey]);
+
+  const detailFields = [
+    dateKey ? fieldDiv('Enquiry Date', row[dateKey]) : '',
+    fieldDiv('Enquiry Mode', row[modeKey]),
+    fieldDiv('Party Name', row[partyKey]),
+    fieldDiv('City / Country', row[cityKey]),
+    fieldDiv('Email', row[emailKey]),
+    fieldDiv('Product', productVal),
+    fieldDiv('Further Action', row[actionKey])
+  ].join('');
+
+  const phoneIcon = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.3c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .5 1 1V20c0 .6-.4 1-1 1C10.4 21 3 13.6 3 4.9c0-.6.5-1 1-1h3.3c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1L6.6 10.8Z" fill="currentColor"/></svg>';
+
+  const flipClass = animate ? ' flip-in' : '';
+  const flipStyle = animate ? ' style="animation-delay:' + Math.min(idx * 35, 500) + 'ms"' : '';
+
+  return (
+    '<details class="row status-' + status.cls + flipClass + '" data-row="' + row._row + '"' + flipStyle + '>' +
+      '<summary class="row-summary">' +
+        '<span class="col-status"><span class="chip chip-' + status.cls + '">' + status.label + '</span></span>' +
+        '<span class="col-lead"><span class="lead-name">' + escapeHtml(displayName(row)) + '</span></span>' +
+        '<span class="col-route">' + escapeHtml(cityShort) + '</span>' +
+        '<span class="col-item">' + escapeHtml(productShort) + '</span>' +
+        '<span class="col-age">' + ageLabel + '</span>' +
+        '<span class="col-chev">▾</span>' +
+      '</summary>' +
+      '<div class="row-expand">' +
+        '<dl class="field-grid">' + detailFields + '</dl>' +
+        (phone
+          ? '<a class="call-btn" href="tel:' + encodeURIComponent(phone) + '">' + phoneIcon + ' Call ' + escapeHtml(phone) + '</a>'
+          : '<div class="call-btn disabled">No phone number on file</div>') +
+        '<div class="divider"></div>' +
+        '<div class="crm-block">' +
+          '<span class="crm-label">Update this lead</span>' +
+          '<select class="qualSelect">' +
+            '<option value="" ' + (qual===''?'selected':'') + '>Mark as…</option>' +
+            '<option value="Yes" ' + (qual==='Yes'?'selected':'') + '>Qualified</option>' +
+            '<option value="No" ' + (qual==='No'?'selected':'') + '>Not qualified</option>' +
+          '</select>' +
+          '<textarea class="nextAction" placeholder="Next action step…">' + escapeHtml(row[nextKey] || '') + '</textarea>' +
+          '<div class="save-row">' +
+            '<span class="saved-chip">Saved ✓</span>' +
+            '<button class="btn saveBtn">Save</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</details>'
+  );
+}
+
+function sortRows(rows, mode){
+  const arr = rows.slice();
+  const dateKey = getDateKey();
+  const timeOf = r => { const d = dateKey ? new Date(r[dateKey]) : null; return (d && !isNaN(d.getTime())) ? d.getTime() : 0; };
+  if(mode === 'newest') return arr.sort((a,b) => timeOf(b) - timeOf(a));
+  if(mode === 'oldest') return arr.sort((a,b) => timeOf(a) - timeOf(b));
+  const rank = r => {
+    const q = (r[getQualKey()]||'').toString().toLowerCase();
+    const d = daysSinceEnquiry(r);
+    if(q === '' && d !== null && d >= OVERDUE_DAYS) return 0;
+    if(q === '') return 1;
+    return 2;
+  };
+  return arr.sort((a,b) => (rank(a) - rank(b)) || (timeOf(a) - timeOf(b)));
+}
+
+function render(rows){
+  document.getElementById('summary').style.display = 'flex';
+  document.getElementById('controls').style.display = 'flex';
+  document.getElementById('listhead').style.display = 'grid';
+
+  const qualKey = getQualKey();
+  const total = rows.length;
+  const qualified = rows.filter(r => (r[qualKey]||'').toString().toLowerCase() === 'yes').length;
+  const pending = rows.filter(r => !(r[qualKey]||'').toString().trim()).length;
+  const overdue = rows.filter(r => {
+    const q = (r[qualKey]||'').toString();
+    const d = daysSinceEnquiry(r);
+    return q === '' && d !== null && d >= OVERDUE_DAYS;
+  }).length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statQualified').textContent = qualified;
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('statOverdue').textContent = overdue;
+
+  if(rows.length === 0){
+    appEl.innerHTML = '<div class="empty">No leads yet. New rows added to the sheet will show up here automatically.</div>';
+    return;
+  }
+
+  const query = (document.getElementById('searchBox').value || '').toLowerCase();
+  const focusMode = document.getElementById('focusMode').checked;
+  const sortMode = document.getElementById('sortOrder').value;
+
+  let base = rows;
+  if(query){ base = base.filter(r => JSON.stringify(r).toLowerCase().includes(query)); }
+  if(focusMode){ base = base.filter(r => !(r[qualKey]||'').toString().trim()); }
+
+  if(base.length === 0){
+    appEl.innerHTML = '<div class="empty">No leads match this view.</div>';
+    return;
+  }
+
+  const sorted = sortRows(base, sortMode);
+  const animate = firstPaint;
+  appEl.innerHTML = '<div class="list">' + sorted.map((r,i) => rowHtml(r, animate, i)).join('') + '</div>';
+  firstPaint = false;
+
+  appEl.querySelectorAll('.row').forEach(function(rowEl){
+    const rowNum = rowEl.getAttribute('data-row');
+    rowEl.querySelector('.saveBtn').addEventListener('click', function(e){
+      e.preventDefault();
+      saveRow(rowEl, rowNum);
+    });
+  });
+}
+
+async function saveRow(rowEl, rowNum){
+  const qual = rowEl.querySelector('.qualSelect').value;
+  const next = rowEl.querySelector('.nextAction').value;
+  const btn = rowEl.querySelector('.saveBtn');
+  const chip = rowEl.querySelector('.saved-chip');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try{
+    const res = await fetch(CONFIG.webAppUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({ row: Number(rowNum), leadQualified: qual, nextAction: next })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || 'Save failed');
+    chip.classList.add('show');
+    showToast('Lead updated');
+
+    const qualKey = getQualKey();
+    const nextKey = getNextKey();
+    const target = currentRows.find(r => String(r._row) === String(rowNum));
+    if(target){ target[qualKey] = qual; target[nextKey] = next; }
+    lastRowsSignature = JSON.stringify(currentRows);
+    render(currentRows);
+  }catch(err){
+    showToast('Save failed — check connection');
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+}
+
+document.getElementById('refreshBtn').addEventListener('click', fetchData);
+document.getElementById('searchBox').addEventListener('input', function(){ render(currentRows); });
+document.getElementById('focusMode').addEventListener('change', function(){ render(currentRows); });
+document.getElementById('sortOrder').addEventListener('change', function(){ render(currentRows); });
+
+const cached = loadCache();
+if(cached && cached.headers && cached.rows){
+  headers = cached.headers;
+  currentRows = cached.rows;
+  lastRowsSignature = JSON.stringify(currentRows);
+  everLoaded = true;
+  render(currentRows);
+  syncInfo.textContent = 'showing saved data — syncing…';
+}
+
+if(CONFIG.webAppUrl && CONFIG.webAppUrl.indexOf('PASTE_YOUR') !== 0){
+  fetchData();
+  setInterval(fetchData, CONFIG.refreshMs);
+} else {
+  syncInfo.textContent = 'not configured';
+}
+</script>
+</body>
+</html>
