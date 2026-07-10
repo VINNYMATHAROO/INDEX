@@ -59,21 +59,19 @@
   .brand .dot{width:6px; height:6px; border-radius:50%; background:#6fd6a8; animation:pulse 2.2s infinite; flex-shrink:0;}
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
   .header-meta{ display:flex; align-items:center; gap:16px; margin-left:auto; flex-shrink:0; }
-  .clock{font-size:12.5px; letter-spacing:0.5px; color:#cfc9b8; white-space:nowrap;}
   .syncline{font-size:10.5px; color:#a49d8a; letter-spacing:0.3px; text-align:right; white-space:nowrap;}
 
   @media(max-width:640px){
     .boardbar{ padding:12px 16px; }
     .brand{ font-size:16px; }
     .logo-box{ height:32px; max-width:100px; }
-    .header-meta{ width:100%; justify-content:space-between; margin-left:0; }
-    .clock{ font-size:11px; }
+    .header-meta{ width:100%; justify-content:flex-end; margin-left:0; }
     .syncline{ font-size:9px; }
   }
 
   /* ---------------- summary strip ---------------- */
   .summary{
-    display:flex; flex-wrap:wrap; gap:8px 26px; align-items:baseline;
+    display:grid; grid-template-columns:repeat(4, auto); gap:8px 30px; align-items:baseline;
     padding:16px 26px; background:var(--panel-alt); border-bottom:1px solid var(--line);
     font-size:12.5px; letter-spacing:0.2px; color:var(--ink-soft);
   }
@@ -81,6 +79,9 @@
   .summary .amber b{color:var(--gold);}
   .summary .red b{color:var(--wine);}
   .summary .green b{color:var(--forest);}
+  @media(max-width:640px){
+    .summary{ grid-template-columns:repeat(2, 1fr); gap:12px 16px; padding:14px 16px; }
+  }
 
   /* ---------------- controls ---------------- */
   .controls{
@@ -218,7 +219,6 @@
     <div class="brand disp"><span class="dot"></span>Lead Desk</div>
   </div>
   <div class="header-meta">
-    <div class="clock mono" id="clock">--:--:--</div>
     <div class="syncline mono" id="syncInfo">connecting…</div>
   </div>
 </div>
@@ -289,12 +289,6 @@ function showToast(msg){
   setTimeout(()=>toastEl.classList.remove('show'), 2200);
 }
 function fmtTime(d){ return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}); }
-
-function tickClock(){
-  document.getElementById('clock').textContent = fmtTime(new Date());
-}
-tickClock();
-setInterval(tickClock, 1000);
 
 (function initLogo(){
   const url = (CONFIG.logoUrl || '').trim();
