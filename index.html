@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lead Desk — Departures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f6f1;
+    --panel:#ffffff;
+    --panel-alt:#f2f0ea;
+    --line:#e6e3d9;
+    --ink:#201f1c;
+    --ink-soft:#7a756b;
+    --gold:#9c7a2e;
+    --gold-tint:#f2ecd9;
+    --wine:#8a2f3a;
+    --wine-tint:#f3e2e2;
+    --forest:#2e5c46;
+    --forest-tint:#e2ebe3;
+    --slate:#565b66;
+    --slate-tint:#e9e9ee;
+    --radius:8px;
+    --shadow:0 4px 16px -10px rgba(30,28,22,0.18);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .disp{font-family:'Fraunces', serif;}
+  .mono{font-family:'JetBrains Mono', monospace;}
+
+  /* ---------------- header ---------------- */
+  .boardbar{
+    background:var(--ink); border-bottom:none;
+    padding:14px 26px; display:flex; align-items:center; gap:14px; flex-wrap:nowrap;
+  }
+  .accent-strip{
+    height:3px; background:linear-gradient(90deg, var(--gold) 0%, var(--gold) 33%, var(--wine) 33%, var(--wine) 66%, var(--forest) 66%, var(--forest) 100%);
+  }
+  .brand-wrap{ display:flex; align-items:center; gap:12px; flex:1 1 auto; min-width:0; }
+  .logo-box{
+    height:38px; width:auto; min-width:38px; max-width:130px; border-radius:9px; flex-shrink:0;
+    background:#ffffff; border:1px solid rgba(255,255,255,0.14);
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    padding:4px 9px;
+  }
+  .logo-box img{ height:100%; width:auto; max-width:100%; object-fit:contain; }
+  .logo-box #logoFallback{ color:var(--ink); font-size:13px; font-weight:600; letter-spacing:0.4px; }
+  .brand{
+    font-weight:600; font-size:20px; letter-spacing:0.3px; display:flex; align-items:center; gap:10px;
+    color:#fdfcf8; font-style:italic; white-space:nowrap; min-width:0; overflow:hidden; text-overflow:ellipsis;
+  }
+  .brand .dot{width:6px; height:6px; border-radius:50%; background:#6fd6a8; animation:pulse 2.2s infinite; flex-shrink:0;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .header-meta{ display:flex; align-items:center; gap:16px; flex-shrink:0; }
+  .syncline{
+    font-size:10.5px; color:#a49d8a; letter-spacing:0.3px; text-align:right;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:210px;
+  }
+
+  @media(max-width:640px){
+    .boardbar{ padding:10px 14px; gap:8px; }
+    .brand{ font-size:14.5px; }
+    .logo-box{ height:28px; max-width:80px; padding:3px 6px; }
+    .syncline{ font-size:8.5px; max-width:96px; }
+  }
+
+  /* ---------------- summary strip ---------------- */
+  .summary{
+    display:grid; grid-template-columns:repeat(4, auto); gap:8px 30px; align-items:baseline;
+    padding:16px 26px; background:var(--panel-alt); border-bottom:1px solid var(--line);
+    font-size:12.5px; letter-spacing:0.2px; color:var(--ink-soft);
+  }
+  .summary b{font-size:19px; color:var(--ink); font-weight:600; font-family:'Inter';}
+  .summary .amber b{color:var(--gold);}
+  .summary .green b{color:var(--forest);}
+  .summary .wine b{color:var(--wine);}
+  .stat-btn{
+    cursor:pointer; padding:6px 12px; margin:-6px -12px; border-radius:var(--radius);
+    border:1px solid transparent; transition:background .15s, border-color .15s;
+    user-select:none;
+  }
+  .stat-btn:hover{ background:rgba(32,31,28,0.05); }
+  .stat-btn.active{ background:var(--panel); border-color:var(--line); box-shadow:var(--shadow); }
+  @media(max-width:640px){
+    .summary{ grid-template-columns:repeat(2, 1fr); gap:10px 12px; padding:14px 16px; }
+    .stat-btn{ padding:6px 8px; margin:-6px -8px; }
+  }
+
+  /* ---------------- controls ---------------- */
+  .controls{
+    display:flex; gap:8px; padding:14px 26px; flex-wrap:wrap; align-items:center;
+    border-bottom:1px solid var(--line); background:var(--panel);
+  }
+  .controls input[type=text]{
+    flex:1; min-width:200px; padding:9px 13px; border-radius:var(--radius); border:1px solid var(--line);
+    background:var(--panel); color:var(--ink); font-size:13px; letter-spacing:0.2px;
+  }
+  .controls input::placeholder{color:var(--ink-soft);}
+  .controls select{
+    padding:9px 12px; border-radius:var(--radius); border:1px solid var(--line);
+    background:var(--panel); color:var(--ink); font-size:12.5px;
+  }
+  .controls input:focus, .controls select:focus, select:focus, textarea:focus{
+    outline:2px solid var(--ink); outline-offset:1px;
+  }
+  .toggle{
+    display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft);
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:8px 13px;
+    letter-spacing:0.2px; white-space:nowrap;
+  }
+  .btn{
+    border:none; border-radius:var(--radius); padding:9px 17px; font-weight:600; font-size:12px;
+    cursor:pointer; letter-spacing:0.2px; background:var(--ink); color:#fdfcf8;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn:disabled{ cursor:not-allowed; opacity:0.75; }
+  .btn.is-loading{ display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+  .spinner{
+    width:13px; height:13px; border-radius:50%;
+    border:2px solid rgba(253,252,248,0.35); border-top-color:#fdfcf8;
+    animation:spin 0.7s linear infinite; display:inline-block; flex:none;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* ---------------- list header ---------------- */
+  .listhead{
+    position:sticky; top:0; z-index:20;
+    display:grid; grid-template-columns:104px 1.5fr 1fr 1.2fr 66px 22px;
+    padding:10px 26px; font-size:10px; letter-spacing:0.8px; color:var(--ink-soft);
+    text-transform:uppercase; font-weight:600;
+    border-bottom:1px solid var(--line); background:var(--panel-alt);
+    box-shadow:0 1px 0 var(--line);
+  }
+  @media(max-width:760px){ .listhead{grid-template-columns:104px 1.6fr 66px 22px;} .lh-route,.lh-item{display:none;} }
+
+  /* ---------------- rows ---------------- */
+  .list{ padding:0 0 40px; }
+  .row{ border-bottom:1px solid var(--line); }
+  .row summary{ list-style:none; cursor:pointer; }
+  .row summary::-webkit-details-marker{ display:none; }
+  .row:nth-child(odd){ background:var(--panel); }
+  .row:nth-child(even){ background:var(--panel); }
+  .row:hover{ background:var(--panel-alt); }
+  .row{ border-left:3px solid transparent; }
+  .row.status-waiting{ border-left-color:var(--gold); }
+  .row.status-delayed{ border-left-color:var(--wine); }
+  .row.status-confirmed{ border-left-color:var(--forest); }
+  .row.status-cancelled{ border-left-color:var(--slate); }
+  .row.status-done{ border-left-color:var(--wine); }
+
+  .row-summary{
+    display:grid; grid-template-columns:104px 1.5fr 1fr 1.2fr 66px 22px;
+    align-items:center; gap:6px; padding:15px 26px;
+  }
+  @media(max-width:760px){ .row-summary{grid-template-columns:104px 1.6fr 66px 22px;} .col-route,.col-item{display:none;} }
+
+  .chip{
+    font-family:'Inter'; font-size:10.5px; font-weight:600; letter-spacing:0.2px;
+    padding:3px 10px; border-radius:20px; white-space:nowrap; display:inline-block;
+    border:1px solid transparent;
+  }
+  .chip-waiting{background:var(--gold-tint); color:var(--gold); border-color:rgba(156,122,46,0.25);}
+  .chip-delayed{background:var(--wine-tint); color:var(--wine); border-color:rgba(138,47,58,0.28);}
+  .chip-confirmed{background:var(--forest-tint); color:var(--forest); border-color:rgba(46,92,70,0.25);}
+  .chip-cancelled{background:var(--slate-tint); color:var(--slate); border-color:rgba(86,91,102,0.22);}
+  .chip-done{background:var(--wine-tint); color:var(--wine); border-color:rgba(138,47,58,0.25);}
+
+  .col-lead{display:flex; flex-direction:column; gap:1px; min-width:0;}
+  .lead-name{font-weight:600; font-size:14px; white-space:normal; overflow-wrap:break-word; line-height:1.3;}
+  .col-route, .col-item{font-size:12.5px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .col-age{font-family:'JetBrains Mono'; font-size:12px; color:var(--ink-soft);}
+  .col-chev{font-size:10px; color:var(--ink-soft); transition:transform .15s; text-align:right;}
+  .row[open] .col-chev{transform:rotate(180deg);}
+
+  .row-expand{ padding:4px 22px 20px; display:flex; flex-direction:column; gap:12px; }
+  .field-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; margin:0; }
+  @media(max-width:520px){ .field-grid{grid-template-columns:1fr;} }
+  .field-grid .field{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+  .field-grid dt{ font-size:9.5px; text-transform:uppercase; letter-spacing:0.6px; color:var(--ink-soft); font-weight:600; margin:0; }
+  .field-grid dd{ margin:0; font-size:13px; color:var(--ink); word-break:break-word; }
+
+  .contact-row{ display:flex; gap:8px; }
+  .call-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--ink); color:#fdfcf8; text-decoration:none;
+    padding:10px; border-radius:var(--radius); font-weight:600; font-size:13.5px; letter-spacing:0.2px;
+    flex:1; min-width:0;
+  }
+  .call-btn.disabled{ background:var(--panel-alt); color:var(--ink-soft); border:1px solid var(--line); flex:1; }
+  .copy-btn{
+    display:flex; align-items:center; justify-content:center;
+    background:var(--panel-alt); color:var(--ink); border:1px solid var(--line);
+    padding:10px 14px; border-radius:var(--radius); font-weight:600; font-size:13px;
+    cursor:pointer; flex-shrink:0;
+  }
+  .copy-btn:active{ transform:scale(0.96); }
+
+  .divider{ height:1px; background:var(--line); }
+
+  .crm-block{ display:flex; flex-direction:column; gap:8px; }
+  .crm-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.6px; color:var(--ink-soft); font-weight:600; }
+  select.qualSelect, textarea{
+    font-family:'Inter'; font-size:13px; border:1px solid var(--line); border-radius:var(--radius);
+    padding:8px 10px; background:var(--panel-alt); color:var(--ink); width:100%;
+  }
+  textarea{ min-height:44px; resize:vertical; }
+  .save-row{ display:flex; justify-content:flex-end; gap:10px; align-items:center; }
+  .saved-chip{ font-size:11px; color:var(--forest); font-weight:600; opacity:0; transition:opacity .3s; }
+  .saved-chip.show{ opacity:1; }
+
+  /* ---------------- new lead modal ---------------- */
+  .btn-secondary{ background:var(--panel-alt); color:var(--ink); border:1px solid var(--line); }
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(32,31,28,0.45);
+    display:none; align-items:center; justify-content:center;
+    padding:40px 16px; z-index:100; overflow-y:auto;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-box{
+    background:var(--panel); border-radius:14px; box-shadow:var(--shadow);
+    width:100%; max-width:680px; padding:30px 34px 26px; max-height:calc(100vh - 80px);
+    display:flex; flex-direction:column; margin:auto;
+  }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-shrink:0; }
+  .modal-head h3{ margin:0; font-size:22px; font-weight:600; }
+  .modal-close{
+    background:none; border:none; font-size:24px; line-height:1; color:var(--ink-soft);
+    cursor:pointer; padding:2px 6px;
+  }
+  #leadForm{ display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+  #formFields{ overflow-y:auto; display:grid; grid-template-columns:1fr 1fr; gap:16px 20px; padding:2px 4px 2px 2px; }
+  .form-field{ display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .form-field.full-width{ grid-column:1 / -1; }
+  @media(max-width:560px){ #formFields{ grid-template-columns:1fr; } }
+  .form-field label{ font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-soft); font-weight:600; }
+  .form-field input, .form-field textarea, .form-field select{
+    font-family:'Inter'; font-size:14px; padding:11px 13px; border-radius:var(--radius);
+    border:1px solid var(--line); background:var(--panel-alt); color:var(--ink);
+  }
+  .form-field textarea{ resize:vertical; min-height:76px; line-height:1.4; }
+  .form-field select{
+    appearance:none; -webkit-appearance:none; -moz-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237a756b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; background-size:16px;
+    padding-right:36px; cursor:pointer;
+  }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:22px; flex-shrink:0; }
+
+  .empty, .configmsg{ padding:60px 22px; text-align:center; color:var(--ink-soft); font-size:13.5px; }
+  .configmsg code{ background:var(--panel-alt); padding:2px 6px; border-radius:5px; font-family:'JetBrains Mono'; }
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff;
+    padding:9px 18px; border-radius:var(--radius); font-size:12.5px;
+    opacity:0; pointer-events:none; transition:opacity .25s; z-index:50; box-shadow:var(--shadow);
+  }
+  .toast.show{ opacity:1; }
+
+  /* quiet entrance, first paint only */
+  @keyframes fadeUp{
+    from{ opacity:0; transform:translateY(4px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .row.flip-in{ animation:fadeUp .3s ease both; }
+
+  @media (prefers-reduced-motion: reduce){
+    .brand .dot{ animation:none; }
+    .row.flip-in{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="boardbar">
+  <div class="brand-wrap">
+    <div class="logo-box" id="logoBox">
+      <img id="logoImg" alt="Company logo" style="display:none;">
+      <span id="logoFallback" class="disp">LD</span>
+    </div>
+    <div class="brand disp"><span class="dot"></span>Lead Desk</div>
+  </div>
+  <div class="header-meta">
+    <div class="syncline mono" id="syncInfo">connecting…</div>
+  </div>
+</div>
+<div class="accent-strip"></div>
+
+<div class="summary" id="summary" style="display:none;">
+  <span class="stat-btn" id="statBtnAll" data-filter="all"><b id="statTotal">0</b> total</span>
+  <span class="stat-btn amber" id="statBtnWaiting" data-filter="waiting"><b id="statPending">0</b> waiting</span>
+  <span class="stat-btn green" id="statBtnConfirmed" data-filter="confirmed"><b id="statQualified">0</b> confirmed</span>
+  <span class="stat-btn wine" id="statBtnDone" data-filter="done"><b id="statDone">0</b> done</span>
+</div>
+
+<div class="controls" id="controls" style="display:none;">
+  <input type="text" id="searchBox" placeholder="Search name, phone, city…" />
+  <select id="statusFilterSelect">
+    <option value="all">All statuses</option>
+    <option value="waiting" selected>Waiting</option>
+    <option value="confirmed">Confirmed</option>
+    <option value="cancelled">Cancelled</option>
+    <option value="done">Done</option>
+  </select>
+  <select id="sortOrder">
+    <option value="urgent">Most urgent first</option>
+    <option value="newest" selected>Newest enquiry first</option>
+    <option value="oldest">Oldest enquiry first</option>
+  </select>
+  <button class="btn btn-secondary" id="addLeadBtn" type="button">+ New Lead</button>
+  <button class="btn" id="refreshBtn">Refresh</button>
+</div>
+
+<div class="listhead" id="listhead" style="display:none;">
+  <span>Status</span><span>Lead</span><span class="lh-route">Route</span><span class="lh-item">Item</span><span>Age</span><span></span>
+</div>
+
+<div id="app">
+  <div class="empty">Loading the board…</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 class="disp">New Lead</h3>
+      <button class="modal-close" id="modalClose" type="button" aria-label="Close">&times;</button>
+    </div>
+    <form id="leadForm">
+      <div id="formFields"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="modalCancel">Cancel</button>
+        <button type="submit" class="btn" id="modalSubmit">Add Lead</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+/* ======================= CONFIG — EDIT THIS ======================= */
+const CONFIG = {
+  // Path or URL to your company logo (png/svg/jpg). Easiest: put the image file in the
+  // same folder as this HTML file and just put its filename here, e.g. "logo.png".
+  logoUrl: "innate.png",
+  webAppUrl: "https://script.google.com/macros/s/AKfycbxqMKaZbGWesqjwPSiDyqkchMn8UWFXgorStnxf63qino1zTtCwulPnFT1kykVUoK8C/exec",
+  refreshMs: 15000,
+  phoneColumn: ""
+};
+/* ==================================================================== */
+
+const appEl = document.getElementById('app');
+const syncInfo = document.getElementById('syncInfo');
+const toastEl = document.getElementById('toast');
+let lastRowsSignature = "";
+let headers = [];
+let currentRows = [];
+let failCount = 0;
+let everLoaded = false;
+let firstPaint = true;
+let statusFilter = 'waiting';
+const CACHE_KEY = 'leadDeskCache_departures_v1';
+const OVERDUE_DAYS = 3;
+
+function loadCache(){
+  try{ const raw = localStorage.getItem(CACHE_KEY); return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+function saveCache(){
+  try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ headers, rows: currentRows, ts: Date.now() })); }catch(e){}
+}
+
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'), 2200);
+}
+
+function copyToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){
+      showToast('Number copied');
+    }).catch(function(){
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Number copied');
+  }catch(e){
+    showToast('Could not copy — please select manually');
+  }
+}
+
+(function initLogo(){
+  const url = (CONFIG.logoUrl || '').trim();
+  if(!url) return;
+  const img = document.getElementById('logoImg');
+  const fallback = document.getElementById('logoFallback');
+  img.onload = function(){ img.style.display = 'block'; fallback.style.display = 'none'; };
+  img.onerror = function(){ img.style.display = 'none'; fallback.style.display = 'block'; };
+  img.src = url;
+})();
+
+async function fetchData(){
+  if(!CONFIG.webAppUrl || CONFIG.webAppUrl.indexOf('PASTE_YOUR') === 0){
+    appEl.innerHTML = '<div class="configmsg">Loading configuration… if this doesn\'t change, open <code>dashboard.html</code> in a text editor ' +
+      'and paste your Apps Script Web App URL into <code>CONFIG.webAppUrl</code> near the top of the script.</div>';
+    return;
+  }
+  try{
+    syncInfo.textContent = 'syncing…';
+    const res = await fetch(CONFIG.webAppUrl + '?t=' + Date.now());
+    const data = await res.json();
+    if(!data.success){ throw new Error(data.error || 'Unknown error'); }
+    headers = data.headers;
+    currentRows = data.rows;
+    failCount = 0;
+    everLoaded = true;
+    const sig = JSON.stringify(currentRows);
+    if(sig !== lastRowsSignature){
+      lastRowsSignature = sig;
+      render(currentRows);
+    }
+    saveCache();
+    syncInfo.textContent = 'live';
+  }catch(err){
+    failCount++;
+    syncInfo.textContent = 'sync error — retrying…';
+    console.error(err);
+    if(!everLoaded && failCount >= 3){
+      appEl.innerHTML = '<div class="empty">Couldn\'t load leads right now. Check your internet connection — this page will keep retrying automatically.</div>';
+    }
+  }
+}
+
+function getPhoneKey(){
+  if(CONFIG.phoneColumn) return CONFIG.phoneColumn;
+  return headers[6];
+}
+function findHeader(patterns, fallbackIdx){
+  for(const p of patterns){
+    const idx = headers.findIndex(h => p.test(h||''));
+    if(idx !== -1) return headers[idx];
+  }
+  return (fallbackIdx !== undefined ? headers[fallbackIdx] : null) || null;
+}
+function getNameKey(){ return findHeader([/person\s*name/i, /party\s*name/i], 1); }
+function getDateKey(){ return findHeader([/enquiry\s*date/i], null); }
+function getQualKey(){ return headers[11] || 'Lead Qualified'; }
+function getNextKey(){ return headers[12] || 'Next Action Step'; }
+
+function displayName(row){
+  const key = getNameKey();
+  const v = (row[key] || '').toString().trim();
+  return (v && v.toUpperCase() !== 'NA') ? v : ('Lead #' + row._row);
+}
+
+function isBlankVal(v){
+  if(v === '' || v === undefined || v === null) return true;
+  return String(v).trim().toUpperCase() === 'NA';
+}
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?$/;
+function formatValue(v){
+  if(v === null || v === undefined) return '';
+  if(typeof v === 'string' && ISO_DATE_RE.test(v)){
+    const d = new Date(v);
+    if(!isNaN(d.getTime())) return d.toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'});
+  }
+  return String(v);
+}
+
+function daysSinceEnquiry(row){
+  const dateKey = getDateKey();
+  if(!dateKey) return null;
+  const raw = row[dateKey];
+  if(!raw) return null;
+  const d = new Date(raw);
+  if(isNaN(d.getTime())) return null;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
+function escapeHtml(s){
+  if(s === null || s === undefined) s = '';
+  s = String(s);
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fieldDiv(label, value){
+  if(isBlankVal(value)) return '';
+  return '<div class="field"><dt>' + escapeHtml(label) + '</dt><dd>' + escapeHtml(formatValue(value)) + '</dd></div>';
+}
+
+function computeStatus(row, days){
+  const qual = (row[getQualKey()] || '').toString().toLowerCase();
+  if(qual === 'yes') return {label:'Confirmed', cls:'confirmed'};
+  if(qual === 'no') return {label:'Cancelled', cls:'cancelled'};
+  if(qual === 'done') return {label:'Done', cls:'done'};
+  return {label:'Waiting', cls:'waiting'};
+}
+
+function rowHtml(row, animate, idx){
+  const phoneKey = getPhoneKey();
+  const nameKey = getNameKey();
+  const phone = (row[phoneKey] || '').toString().trim();
+  const qualKey = getQualKey();
+  const nextKey = getNextKey();
+  const qual = (row[qualKey] || '').toString();
+
+  const dateKey = getDateKey();
+  const modeKey = findHeader([/enquiry\s*mode/i], 2);
+  const partyKey = findHeader([/party\s*name/i], 3);
+  const cityKey = findHeader([/city/i], 4);
+  const emailKey = findHeader([/email/i], 7);
+  const productKey = findHeader([/product/i], 8);
+  const qtyKey = findHeader([/quantity/i], 9);
+  const actionKey = findHeader([/further\s*action/i], 10);
+
+  const days = daysSinceEnquiry(row);
+  const status = computeStatus(row, days);
+  const ageLabel = days === null ? '—' : (days <= 0 ? 'today' : days + 'd');
+
+  let productVal = row[productKey];
+  if(!isBlankVal(productVal) && !isBlankVal(row[qtyKey])) productVal = productVal + ' · ' + row[qtyKey];
+  const productShort = isBlankVal(productVal) ? '—' : String(productVal);
+  const cityShort = isBlankVal(row[cityKey]) ? '—' : String(row[cityKey]);
+
+  const detailFields = [
+    fieldDiv('Name', row[nameKey]),
+    dateKey ? fieldDiv('Enquiry Date', row[dateKey]) : '',
+    fieldDiv('Enquiry Mode', row[modeKey]),
+    fieldDiv('Party Name', row[partyKey]),
+    fieldDiv('City / Country', row[cityKey]),
+    fieldDiv('Email', row[emailKey]),
+    fieldDiv('Product', productVal),
+    fieldDiv('Further Action', row[actionKey])
+  ].join('');
+
+  const phoneIcon = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.3c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .5 1 1V20c0 .6-.4 1-1 1C10.4 21 3 13.6 3 4.9c0-.6.5-1 1-1h3.3c.6 0 1 .4 1 1 0 1.2.2 2.4.6 3.6.1.3 0 .7-.2 1L6.6 10.8Z" fill="currentColor"/></svg>';
+
+  const copyIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2"/>' +
+    '<path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="2"/></svg>';
+
+  const flipClass = animate ? ' flip-in' : '';
+  const flipStyle = animate ? ' style="animation-delay:' + Math.min(idx * 35, 500) + 'ms"' : '';
+
+  return (
+    '<details class="row status-' + status.cls + flipClass + '" data-row="' + row._row + '"' + flipStyle + '>' +
+      '<summary class="row-summary">' +
+        '<span class="col-status"><span class="chip chip-' + status.cls + '">' + status.label + '</span></span>' +
+        '<span class="col-lead"><span class="lead-name">' + escapeHtml(displayName(row)) + '</span></span>' +
+        '<span class="col-route">' + escapeHtml(cityShort) + '</span>' +
+        '<span class="col-item">' + escapeHtml(productShort) + '</span>' +
+        '<span class="col-age">' + ageLabel + '</span>' +
+        '<span class="col-chev">▾</span>' +
+      '</summary>' +
+      '<div class="row-expand">' +
+        '<dl class="field-grid">' + detailFields + '</dl>' +
+        (phone
+          ? '<div class="contact-row">' +
+              '<a class="call-btn" href="tel:' + encodeURIComponent(phone) + '">' + phoneIcon + ' Call ' + escapeHtml(phone) + '</a>' +
+              '<button type="button" class="copy-btn" data-phone="' + escapeHtml(phone) + '" title="Copy number">' + copyIcon + '</button>' +
+            '</div>'
+          : '<div class="call-btn disabled">No phone number on file</div>') +
+        '<div class="divider"></div>' +
+        '<div class="crm-block">' +
+          '<span class="crm-label">Update this lead</span>' +
+          '<select class="qualSelect">' +
+            '<option value="" ' + (qual===''?'selected':'') + '>Mark as…</option>' +
+            '<option value="Yes" ' + (qual==='Yes'?'selected':'') + '>Qualified</option>' +
+            '<option value="No" ' + (qual==='No'?'selected':'') + '>Not qualified</option>' +
+            '<option value="Done" ' + (qual==='Done'?'selected':'') + '>Done</option>' +
+          '</select>' +
+          '<textarea class="nextAction" placeholder="Next action step…">' + escapeHtml(row[nextKey] || '') + '</textarea>' +
+          '<div class="save-row">' +
+            '<span class="saved-chip">Saved ✓</span>' +
+            '<button class="btn saveBtn">Save</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</details>'
+  );
+}
+
+function sortRows(rows, mode){
+  const arr = rows.slice();
+  const dateKey = getDateKey();
+  const timeOf = r => { const d = dateKey ? new Date(r[dateKey]) : null; return (d && !isNaN(d.getTime())) ? d.getTime() : 0; };
+
+  let sorted;
+  if(mode === 'newest'){
+    sorted = arr.sort((a,b) => timeOf(b) - timeOf(a));
+  } else if(mode === 'oldest'){
+    sorted = arr.sort((a,b) => timeOf(a) - timeOf(b));
+  } else {
+    const rank = r => {
+      const q = (r[getQualKey()]||'').toString().toLowerCase();
+      const d = daysSinceEnquiry(r);
+      if(q === '' && d !== null && d >= OVERDUE_DAYS) return 0;
+      if(q === '') return 1;
+      return 2;
+    };
+    sorted = arr.sort((a,b) => (rank(a) - rank(b)) || (timeOf(a) - timeOf(b)));
+  }
+
+  // Cancelled leads always sink to the bottom, regardless of sort mode,
+  // so the top of the list only ever shows active (non-cancelled) leads.
+  const isCancelled = r => computeStatus(r, daysSinceEnquiry(r)).cls === 'cancelled';
+  const active = sorted.filter(r => !isCancelled(r));
+  const cancelled = sorted.filter(r => isCancelled(r));
+  return active.concat(cancelled);
+}
+
+function render(rows){
+  document.getElementById('summary').style.display = 'flex';
+  document.getElementById('controls').style.display = 'flex';
+  document.getElementById('listhead').style.display = 'grid';
+
+  const qualKey = getQualKey();
+  const total = rows.length;
+  const qualified = rows.filter(r => (r[qualKey]||'').toString().toLowerCase() === 'yes').length;
+  const done = rows.filter(r => (r[qualKey]||'').toString().toLowerCase() === 'done').length;
+  const pending = rows.filter(r => !(r[qualKey]||'').toString().trim()).length;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statQualified').textContent = qualified;
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statPending').textContent = pending;
+
+  document.getElementById('statBtnAll').classList.toggle('active', statusFilter === 'all');
+  document.getElementById('statBtnWaiting').classList.toggle('active', statusFilter === 'waiting');
+  document.getElementById('statBtnConfirmed').classList.toggle('active', statusFilter === 'confirmed');
+  document.getElementById('statBtnDone').classList.toggle('active', statusFilter === 'done');
+  document.getElementById('statusFilterSelect').value = statusFilter;
+
+  if(rows.length === 0){
+    appEl.innerHTML = '<div class="empty">No leads yet. New rows added to the sheet will show up here automatically.</div>';
+    return;
+  }
+
+  const query = (document.getElementById('searchBox').value || '').toLowerCase();
+  const sortMode = document.getElementById('sortOrder').value;
+
+  let base = rows;
+  if(query){ base = base.filter(r => JSON.stringify(r).toLowerCase().includes(query)); }
+  if(statusFilter === 'waiting'){ base = base.filter(r => computeStatus(r, daysSinceEnquiry(r)).cls === 'waiting'); }
+  else if(statusFilter === 'confirmed'){ base = base.filter(r => computeStatus(r, daysSinceEnquiry(r)).cls === 'confirmed'); }
+  else if(statusFilter === 'cancelled'){ base = base.filter(r => computeStatus(r, daysSinceEnquiry(r)).cls === 'cancelled'); }
+  else if(statusFilter === 'done'){ base = base.filter(r => computeStatus(r, daysSinceEnquiry(r)).cls === 'done'); }
+
+  if(base.length === 0){
+    appEl.innerHTML = '<div class="empty">No leads match this view.</div>';
+    return;
+  }
+
+  const sorted = sortRows(base, sortMode);
+  const animate = firstPaint;
+  appEl.innerHTML = '<div class="list">' + sorted.map((r,i) => rowHtml(r, animate, i)).join('') + '</div>';
+  firstPaint = false;
+
+  appEl.querySelectorAll('.row').forEach(function(rowEl){
+    const rowNum = rowEl.getAttribute('data-row');
+    rowEl.querySelector('.saveBtn').addEventListener('click', function(e){
+      e.preventDefault();
+      saveRow(rowEl, rowNum);
+    });
+    const copyBtn = rowEl.querySelector('.copy-btn');
+    if(copyBtn){
+      copyBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        copyToClipboard(copyBtn.getAttribute('data-phone'));
+      });
+    }
+  });
+}
+
+async function saveRow(rowEl, rowNum){
+  const qual = rowEl.querySelector('.qualSelect').value;
+  const next = rowEl.querySelector('.nextAction').value;
+  const btn = rowEl.querySelector('.saveBtn');
+  const chip = rowEl.querySelector('.saved-chip');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try{
+    const res = await fetch(CONFIG.webAppUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({ row: Number(rowNum), leadQualified: qual, nextAction: next })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || 'Save failed');
+    chip.classList.add('show');
+    showToast('Lead updated');
+
+    const qualKey = getQualKey();
+    const nextKey = getNextKey();
+    const target = currentRows.find(r => String(r._row) === String(rowNum));
+    if(target){ target[qualKey] = qual; target[nextKey] = next; }
+    lastRowsSignature = JSON.stringify(currentRows);
+    render(currentRows);
+  }catch(err){
+    showToast('Save failed — check connection');
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = 'Save';
+  }
+}
+
+/* ---------------- new lead modal ---------------- */
+function fieldInputType(headerName){
+  const h = (headerName || '').toLowerCase();
+  if(/date/.test(h)) return 'date';
+  if(/email/.test(h)) return 'email';
+  if(/phone|mobile|contact\s*no/.test(h)) return 'tel';
+  if(/quantity|qty/.test(h)) return 'number';
+  if(/detail|action|remark|note|address|description|comment/.test(h)) return 'textarea';
+  return 'text';
+}
+
+let isSubmitting = false;
+let currentSubmissionId = null;
+
+function newSubmissionId(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+}
+
+function openAddModal(){
+  if(!headers || headers.length < 2){
+    showToast('Still loading sheet data — try again in a moment');
+    return;
+  }
+  currentSubmissionId = newSubmissionId();
+  const container = document.getElementById('formFields');
+  container.innerHTML = '';
+
+  // Column A (index 0) is an auto-generated serial number and is never
+  // shown in the intake form — the server computes it.
+  const qualKey = getQualKey();
+
+  for(let i = 1; i < headers.length; i++){
+    const h = headers[i];
+    if(!h) continue;
+    const id = 'field_' + i;
+    const div = document.createElement('div');
+    const label = document.createElement('label');
+    label.setAttribute('for', id);
+    label.textContent = h;
+
+    if(h === qualKey){
+      // Lead Qualified — Yes/No dropdown instead of a free-text field.
+      div.className = 'form-field';
+      div.appendChild(label);
+      const select = document.createElement('select');
+      select.id = id;
+      select.setAttribute('data-header', h);
+      select.innerHTML =
+        '<option value="">Mark as…</option>' +
+        '<option value="Yes">Qualified</option>' +
+        '<option value="No">Not qualified</option>' +
+        '<option value="Done">Done</option>';
+      div.appendChild(select);
+      container.appendChild(div);
+      continue;
+    }
+
+    const type = fieldInputType(h);
+    div.className = 'form-field' + (type === 'textarea' ? ' full-width' : '');
+    div.appendChild(label);
+    if(type === 'textarea'){
+      const textarea = document.createElement('textarea');
+      textarea.id = id;
+      textarea.rows = 3;
+      textarea.setAttribute('data-header', h);
+      div.appendChild(textarea);
+    } else {
+      const input = document.createElement('input');
+      input.type = type;
+      input.id = id;
+      input.setAttribute('data-header', h);
+      div.appendChild(input);
+    }
+    container.appendChild(div);
+  }
+
+  document.getElementById('modalOverlay').classList.add('show');
+  const firstInput = container.querySelector('input');
+  if(firstInput) firstInput.focus();
+}
+
+function closeAddModal(){
+  if(isSubmitting){
+    showToast('Still submitting — please wait for it to finish');
+    return;
+  }
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+document.getElementById('addLeadBtn').addEventListener('click', openAddModal);
+document.getElementById('modalClose').addEventListener('click', closeAddModal);
+document.getElementById('modalCancel').addEventListener('click', closeAddModal);
+document.getElementById('modalOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeAddModal();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && document.getElementById('modalOverlay').classList.contains('show')) closeAddModal();
+});
+
+document.getElementById('leadForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  if(isSubmitting) return; // belt-and-suspenders — button is already disabled below
+  const inputs = document.querySelectorAll('#formFields input, #formFields textarea, #formFields select');
+  const fields = {};
+  let hasAny = false;
+  inputs.forEach(function(inp){
+    const v = inp.value.trim();
+    if(v) hasAny = true;
+    fields[inp.getAttribute('data-header')] = v;
+  });
+  if(!hasAny){
+    showToast('Fill in at least one field');
+    return;
+  }
+
+  const submitBtn = document.getElementById('modalSubmit');
+  isSubmitting = true;
+  submitBtn.disabled = true;
+  submitBtn.classList.add('is-loading');
+  submitBtn.innerHTML = '<span class="spinner"></span> Submitting…';
+  try{
+    const res = await fetch(CONFIG.webAppUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action: 'addLead', clientId: currentSubmissionId, fields: fields })
+    });
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || 'Failed to add lead');
+    showToast('Lead added');
+    isSubmitting = false;
+    closeAddModal();
+    document.getElementById('leadForm').reset();
+    fetchData();
+  }catch(err){
+    showToast('Could not add lead — check connection, then check the sheet before retrying');
+    console.error(err);
+  }finally{
+    isSubmitting = false;
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('is-loading');
+    submitBtn.textContent = 'Add Lead';
+  }
+});
+
+document.getElementById('refreshBtn').addEventListener('click', fetchData);
+document.getElementById('searchBox').addEventListener('input', function(){ render(currentRows); });
+document.getElementById('sortOrder').addEventListener('change', function(){ render(currentRows); });
+document.getElementById('statusFilterSelect').addEventListener('change', function(){ setStatusFilter(this.value); });
+
+function setStatusFilter(filter){
+  statusFilter = filter;
+  render(currentRows);
+}
+document.getElementById('statBtnAll').addEventListener('click', function(){ setStatusFilter('all'); });
+document.getElementById('statBtnWaiting').addEventListener('click', function(){ setStatusFilter('waiting'); });
+document.getElementById('statBtnConfirmed').addEventListener('click', function(){ setStatusFilter('confirmed'); });
+document.getElementById('statBtnDone').addEventListener('click', function(){ setStatusFilter('done'); });
+
+const cached = loadCache();
+if(cached && cached.headers && cached.rows){
+  headers = cached.headers;
+  currentRows = cached.rows;
+  lastRowsSignature = JSON.stringify(currentRows);
+  everLoaded = true;
+  render(currentRows);
+  syncInfo.textContent = 'showing saved data — syncing…';
+}
+
+if(CONFIG.webAppUrl && CONFIG.webAppUrl.indexOf('PASTE_YOUR') !== 0){
+  fetchData();
+  setInterval(fetchData, CONFIG.refreshMs);
+} else {
+  syncInfo.textContent = 'not configured';
+}
+</script>
+</body>
+</html>
